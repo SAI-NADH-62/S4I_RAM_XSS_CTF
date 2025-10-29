@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stored — XSS CTF</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    main { max-width:900px; margin:2rem auto; padding:1rem; }
+    .vuln-box { background: rgba(255,255,255,0.02); padding:1rem; border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
+    .input-row { display:flex; gap:8px; margin:0.75rem 0; align-items:center; }
+    input.msg { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; }
+    button.go { padding:8px 12px; border-radius:8px; border:none; background: linear-gradient(90deg,#e11d48,#ff6b8a); color:#fff; font-weight:600; }
+    .notes { margin-top:12px; }
+    .note { padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); margin-bottom:8px; background: rgba(0,0,0,0.02); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand"><strong>XSS</strong> CTF <span class="tag">stored</span></div>
+      <nav class="top-nav"><a href="/index.html">Home</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1>Stored XSS </h1>
+      <p class="lead">Definition: Stored XSS occurs when user input is saved (in DB or localStorage) and later rendered unsafely for others.</p>
+      <p class="lead">Impact: persisted payloads can affect many victims. This demo stores notes to <code>localStorage</code>.</p>
+
+      <div class="vuln-box">
+        <form id="form" class="input-row" onsubmit="return false;">
+          <input id="note" class="msg" placeholder='Post a comment' />
+          <button id="save" class="go">Save</button>
+        </form>
+
+        <div class="notes" id="notesContainer"></div>
+        <div class="hint">
+          Tip: DTrigger an alert containing the text "STORED" to reveal the flag.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><small>CTF lab - intentional vulnerabilities only</small></div>
+  </footer>
+
+  <script>
+    window.ctf_token = "stored-token-SPR1NT3R";
+    const noteInput = document.getElementById('note');
+    const saveBtn = document.getElementById('save');
+    const notesContainer = document.getElementById('notesContainer');
+    let claimed = false;
+
+    /    function isBlocked(input) {
+      const lower = input.toLowerCase().trimStart();
+           return lower.startsWith("<script");
+    }
+
+    function render() {
+      const list = JSON.parse(localStorage.getItem('notes') || '[]');
+      notesContainer.innerHTML = list.map(n => `<div class="note">${n}</div>`).join('');
+      const s = notesContainer.querySelector('script');
+      if (s && !claimed) {
+        setTimeout(()=> claimFlag('STORED'), 200);
+      }
+    }
+
+    async function claimFlag(name) {
+      if (claimed) return;
+      claimed = true;
+      try {
+        const r = await fetch('/api/claim', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ token: window.ctf_token, challenge: name })
+        });
+        const j = await r.json();
+        alert('FLAG: ' + j.flag);
+      } catch(e){ alert('Error contacting /api/claim: ' + e.message); }
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const v = noteInput.value;
+      if (!v.trim()) return;
+
+      if (isBlocked(v)) {
+        alert("Blocked: <script> tags are not allowed!");
+        noteInput.value = '';
+        return;
+      }
+
+      const list = JSON.parse(localStorage.getItem('notes') || '[]');
+      list.push(v);
+      localStorage.setItem('notes', JSON.stringify(list));
+      noteInput.value = '';
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

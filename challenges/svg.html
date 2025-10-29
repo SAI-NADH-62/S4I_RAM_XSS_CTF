@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SVG — XSS CTF</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    main { max-width:900px; margin:2rem auto; padding:1rem; }
+    .vuln-box { background: rgba(255,255,255,0.02); padding:1rem; border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
+    .input-row { display:flex; gap:8px; margin:0.75rem 0; align-items:center; }
+    input.msg, input[type=file] { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; }
+    button.go { padding:8px 12px; border-radius:8px; border:none; background: linear-gradient(90deg,#e11d48,#ff6b8a); color:#fff; font-weight:600; }
+    .preview { margin-top:12px; border-radius:8px; overflow:auto; padding:8px; background: rgba(0,0,0,0.02); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand"><strong>XSS</strong> CTF <span class="tag">svg</span></div>
+      <nav class="top-nav"><a href="/index.html">Home</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1>SVG Injection</h1>
+      <p class="lead">Definition: SVGs are XML and can contain scripts and event attributes. Unsafely inserting raw SVG markup can lead to XSS.</p>
+      <p class="lead">Impact: an attacker can craft an SVG that executes JavaScript when loaded enabling cookie theft, unauthorized actions, or persistent XSS.</p>
+
+      <div class="vuln-box">
+        <div class="input-row">
+          <input id="svgtext" placeholder="Paste SVG text here" />
+          <input id="file" type="file" accept=".svg" />
+          <button id="apply" class="go">Inject</button>
+        </div>
+
+        <div id="svgwrap" class="preview">No SVG injected yet.</div>
+        <div class="hint">Tip:Trigger a fetch request containing the text "SVG" to reveal the flag. </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><small>CTF lab - intentional vulnerabilities only</small></div>
+  </footer>
+
+  <script>
+    window.ctf_token = "svg-token-SCRIPT5";
+    const svgText = document.getElementById('svgtext');
+    const fileInput = document.getElementById('file');
+    const applyBtn = document.getElementById('apply');
+    const wrap = document.getElementById('svgwrap');
+    let claimed = false;
+
+    function updateQuerySvg(text) {
+      try {
+        const params = new URLSearchParams(location.search);
+        if (text) params.set('svg', text); else params.delete('svg');
+        history.replaceState(null, '', location.pathname + '?' + params.toString());
+      } catch(e) { /* ignore for very long text */ }
+    }
+
+    function injectSvg(text) {
+      // intentionally vulnerable: injecting raw svg
+      wrap.innerHTML = text;
+      detectAndClaim(text);
+    }
+
+    async function claimFlag(name){
+      if (claimed) return;
+      claimed = true;
+      try {
+        const r = await fetch('/api/claim', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: window.ctf_token, challenge: name })});
+        if (!r.ok) { const err = await r.json().catch(()=>({error:'unknown'})); alert('Claim failed: '+(err.error||r.status)); return; }
+        const j = await r.json(); alert('FLAG: ' + j.flag);
+      } catch(e){ alert('Error contacting /api/claim: ' + e.message); }
+    }
+
+    function detectAndClaim(text){
+      if (claimed) return;
+      // If the injected svg markup or attributes contain the specific test pattern "fetch('/SVG')",
+      // treat it as the test payload and claim the flag.
+      try {
+        const injected = wrap.querySelector('svg');
+        const markupContainsPattern = (text && text.includes("fetch('/SVG')"));
+        const onloadAttr = injected && (injected.getAttribute('onload') || '');
+        const innerHandler = injected && injected.querySelector('[onload], [onerror]');
+        if (markupContainsPattern || onloadAttr.includes("fetch('/SVG')") || (innerHandler && innerHandler.getAttribute('onload') && innerHandler.getAttribute('onload').includes("fetch('/SVG')"))) {
+          setTimeout(()=> claimFlag('SVG'), 200);
+          return;
+        }
+
+        // Also check for inline <script> that calls fetch('/SVG')
+        const scriptNode = injected && injected.querySelector('script');
+        if (scriptNode && scriptNode.textContent && scriptNode.textContent.includes("fetch('/SVG')")) {
+          setTimeout(()=> claimFlag('SVG'), 200);
+          return;
+        }
+      } catch(e) {
+        // ignore parse errors
+      }
+
+      // If there's an onload/onerror attribute, allow normal execution to run then claim.
+      const injectedSvg = wrap.querySelector('svg');
+      if (injectedSvg) {
+        const hasEvent = injectedSvg.getAttribute('onload') || injectedSvg.getAttribute('onerror') || injectedSvg.querySelector('[onload], [onerror]');
+        if (hasEvent) {
+          setTimeout(()=> claimFlag('SVG'), 400);
+        }
+      }
+    }
+
+    // handle file upload
+    fileInput.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        const txt = ev.target.result;
+        svgText.value = txt;
+        try { updateQuerySvg(encodeURIComponent(txt)); } catch(e){}
+        injectSvg(txt);
+      };
+      reader.readAsText(f);
+    });
+
+    applyBtn.addEventListener('click', ()=>{
+      let v = svgText.value || '';
+      if (!v) {
+        const p = new URLSearchParams(location.search).get('svg') || '';
+        if (p) {
+          try { v = decodeURIComponent(p); } catch(e){ v = p; }
+        }
+      }
+      if (!v) return;
+      try { updateQuerySvg(encodeURIComponent(v)); } catch(e){}
+      injectSvg(v);
+    });
+
+    // initialize from ?svg= if present
+    (function initFromQuery() {
+      const q = new URLSearchParams(location.search).get('svg') || '';
+      if (q) {
+        let decoded = q;
+        try { decoded = decodeURIComponent(q); } catch(e){}
+        svgText.value = decoded;
+        injectSvg(decoded);
+      }
+    })();
+  </script>
+</body>
+</html>

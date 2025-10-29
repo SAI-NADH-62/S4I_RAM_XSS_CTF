@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DOM — XSS CTF</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    main { max-width:900px; margin:2rem auto; padding:1rem; }
+    .vuln-box { background: rgba(255,255,255,0.02); padding:1rem; border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
+    .input-row { display:flex; gap:8px; margin:0.75rem 0; align-items:center; }
+    input.msg { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; }
+    button.go { padding:8px 12px; border-radius:8px; border:none; background: linear-gradient(90deg,#e11d48,#ff6b8a); color:#fff; font-weight:600; }
+    .hint { color: #9aa6b2; font-size:0.9rem; margin-top:0.6rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand"><strong>XSS</strong> CTF <span class="tag">DOM</span></div>
+      <nav class="top-nav"><a href="/index.html">Home</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1>DOM-based XSS</h1>
+      <p class="lead">Definition: DOM XSS happens when client-side JavaScript writes user-controlled data into the DOM in an unsafe way (e.g., using <code>innerHTML</code> with <code>location.hash</code> or <code>location.search</code>), enabling script injection without a server round-trip.</p>
+      <p class="lead">Impact: Attacker-supplied scripts can run in victims’ browsers to steal cookies, call APIs, or perform actions on behalf of the user.</p>
+
+      <div class="vuln-box">
+        <div class="input-row">
+          <input id="payload" class="msg" placeholder='Hello, I am BATMAN - it will be placed after # in the URL (hash)' />
+          <button id="apply" class="go">Apply</button>
+        </div>
+
+        <div id="out">Output: <em>no message</em></div>
+        <div class="hint">Trigger an alert containing the text "DOM" to reveal the flag.</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><small>CTF lab - intentional vulnerabilities only</small></div>
+  </footer>
+
+  <script>
+    window.ctf_token = "dom-token-DRAGON2";
+    const input = document.getElementById('payload');
+    const applyBtn = document.getElementById('apply');
+    const out = document.getElementById('out');
+    let claimed = false;
+
+    function updateHash(value) {
+      const newHash = value ? '#' + value : '';
+      history.replaceState(null, '', location.pathname + location.search + newHash);
+    }
+
+    function injectFromHash(value) {
+      // intentionally vulnerable
+      out.innerHTML = '<p>User said: ' + value + '</p>';
+      detectAndClaim();
+    }
+
+    async function claimFlag(name){
+      if (claimed) return;
+      claimed = true;
+      try {
+        const resp = await fetch('/api/claim', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ token: window.ctf_token, challenge: name })
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(()=>({ error: 'unknown' }));
+          alert('Claim failed: ' + (err.error || resp.status));
+          return;
+        }
+        const j = await resp.json();
+        alert('FLAG: ' + j.flag);
+      } catch(e){ alert('Error contacting /api/claim: ' + e.message); }
+    }
+
+    function detectAndClaim(){
+      if (claimed) return;
+      // detect elements with event handlers that could run (onerror/onload/onclick/onmouseover)
+      const el = out.querySelector('[onerror], [onload], [onclick], [onmouseover]');
+      if (el) {
+        // let injected handler run then claim
+        setTimeout(()=> claimFlag('DOM'), 200);
+      }
+    }
+
+    (function initFromHash(){
+      const h = location.hash.slice(1);
+      if (h) { input.value = h; injectFromHash(h); }
+    })();
+
+    let t=null;
+    input.addEventListener('input', (e)=>{
+      const v = e.target.value;
+      updateHash(v);
+      clearTimeout(t);
+      t = setTimeout(()=> injectFromHash(v), 120);
+    });
+
+    applyBtn.addEventListener('click', ()=>{
+      const v = input.value;
+      updateHash(v);
+      injectFromHash(v);
+      input.focus();
+    });
+
+    input.addEventListener('keydown', (e)=> { if (e.key === 'Enter'){ e.preventDefault(); applyBtn.click(); }});
+  </script>
+</body>
+</html>
