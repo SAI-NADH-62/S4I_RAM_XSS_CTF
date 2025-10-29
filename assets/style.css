@@ -1,4 +1,4 @@
-/* assets/style.css - CyberHawks XSS CTF Lab (final polished version) */
+/* assets/style.css - CyberHawks XSS CTF (final polished version) */
 :root {
   --bg: #0f1720;
   --card: #0b1220;
@@ -259,3 +259,21 @@ body {
   transform: scale(1.1);
   box-shadow: 0 0 6px var(--accent);
 }
+
+/* small form styles used on login page */
+input[type="text"], input[type="password"], input[type="email"], textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: #e6eef6;
+  margin-top: 6px;
+}
+label { font-size: 0.95rem; color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+thead th { color: var(--muted); font-weight: 700; }
+
+.small-muted { color: var(--muted); font-size: 0.9rem; }
