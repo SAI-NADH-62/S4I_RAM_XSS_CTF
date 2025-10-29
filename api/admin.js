@@ -36,7 +36,7 @@ export default function handler(req, res) {
         <p><strong>Username:</strong> L0rD_admin</p>
         <p><strong>Email:</strong> admin@cyberhawks.com</p>
         <p><strong>Role:</strong> superadmin</p>
-        <p class="small-muted">FLAG: <code>CHCTF{4dm1n_d4t4_Br34ch3d_By_0xG0D}	</code></p>
+        <p class="small-muted">FLAG: <code>CHCTF{....- -.. -- .---- -. ..--.- -.. ....- - ....- ..--.- -... .-. ...-- ....- -.-. .... ...-- -.. ..--.- -... -.-- ..--.- ----- -..- --. ----- -..}	</code></p>
       </section>
 
       <section class="card" style="margin-top:18px;">
