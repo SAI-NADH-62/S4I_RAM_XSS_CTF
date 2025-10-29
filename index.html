@@ -16,11 +16,11 @@
       </div>
 
       <nav class="top-nav" aria-label="Primary navigation">
-        <a href="#challenge">Challenge</a>
+        <a href="#challenge">SQL_Challenge</a>
         <a href="#rules">Rules</a>
         <!-- replace this image with your club logo at assets/logo.png -->
         <a href="index.html">
-          <img src="./assets/club-logo.png" alt="CyberHawks Logo" class="nav-logo" onerror="this.style.display='none'">
+          <img src="./assets/logo.png" alt="CyberHawks Logo" class="nav-logo" onerror="this.style.display='none'">
         </a>
       </nav>
     </div>
@@ -28,12 +28,10 @@
 
   <main id="main" class="container">
     <section class="hero">
-      <h1>SQL Injection — Authentication Bypass (easy)</h1>
-      <p class="lead">Bypass login using SQL injection. The admin dashboard is not present in the static files - it is only returned by the serverless API when authentication is successful.</p>
+      <h1>SQL Injection</h1>
+      <p class="lead">A login form directly inserts user input into an SQL query, letting an attacker inject conditions so the WHERE clause always returns true and they log in without valid credentials.</p>
+<p>Impact: Access to sensitive pages/data and ability to pivot inside the app and Can lead to full DB compromise if the app DB user has high privileges.</p>
       <div class="meta">
-        <span class="pill">1 challenge</span>
-        <span class="pill">Serverless API</span>
-        <span class="pill">Auth bypass only</span>
       </div>
     </section>
 
@@ -46,13 +44,7 @@
       </form>
       <p id="message" class="small-muted" style="margin-top:12px;"></p>
 
-      <details style="margin-top:12px; color:var(--muted);">
-        <summary>Hints</summary>
-        <ul>
-          <li>Try classical authentication bypass payloads.</li>
-          <li>Look for variations with single/double quotes and SQL comments.</li>
-        </ul>
-      </details>
+
     </section>
 
     <section id="rules" class="rules">

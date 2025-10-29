@@ -30,14 +30,54 @@ export default function handler(req, res) {
       </div>
     </header>
 
-    <main class="container">
-      <section class="card">
-        <h2>Administrator Profile</h2>
-        <p><strong>Username:</strong> admin</p>
-        <p><strong>Email:</strong> admin@cyberhawks.local</p>
-        <p><strong>Role:</strong> superadmin</p>
-        <p class="small-muted">FLAG: <code>FLAG{SQLI_ADMIN_BYPASS}</code></p>
-      </section>
+<main class="container">
+  <section class="card">
+    <h2>Administrator Profile</h2>
+    <p><strong>Username:</strong> L0rD_admin</p>
+    <p><strong>Email:</strong> admin@cyberhawks.com</p>
+    <p><strong>Role:</strong> superadmin</p>
+
+    <!-- Hidden flag (revealed when selected) -->
+    <p class="reveal-on-select" tabindex="0" aria-label="Select to reveal flag">
+      CHCTF{4dm1n_d4t4_Br34ch3d_By_0xG0D}
+    </p>
+
+    <p class="small-muted">FLAG: <code>[hidden — select text above to reveal]</code></p>
+  </section>
+</main>
+
+<style>
+  .container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+  .card {
+    background: #1e1e1e;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    color: #f5f5f5;
+  }
+  .reveal-on-select {
+    user-select: text;
+    color: transparent;
+    background: linear-gradient(to right, #f5f5f5 50%, transparent 50%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    cursor: pointer;
+  }
+  .reveal-on-select::selection {
+    color: #00ff88;
+    background: none;
+  }
+  .small-muted {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+  }
+</style>
+
 
       <section class="card" style="margin-top:18px;">
         <h3>Recent Transactions</h3>
